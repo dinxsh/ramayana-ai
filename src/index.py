@@ -1,15 +1,36 @@
 from transformers import BertForQuestionAnswering, BertTokenizer
 import torch
+import re
+from nltk.corpus import stopwords
 
 # Load pre-trained model and tokenizer
 model_name = 'bert-large-uncased-whole-word-masking-finetuned-squad'
 model = BertForQuestionAnswering.from_pretrained(model_name)
 tokenizer = BertTokenizer.from_pretrained(model_name)
 
+# Function to clean and preprocess text
+def clean_text(text):
+    # Remove special characters and symbols
+    text = re.sub(r'[^A-Za-z0-9\s]', '', text)
+
+    # Normalize text (convert to lowercase)
+    text = text.lower()
+
+    # Remove stopwords
+    stop_words = set(stopwords.words('english'))
+    tokens = text.split()
+    tokens = [token for token in tokens if token not in stop_words]
+
+    # Join tokens back into a single string
+    return ' '.join(tokens)
+
 # Read context from a text file with UTF-8 encoding
 context_file_path = './../data/english/archive/ramayan.txt'
 with open(context_file_path, 'r', encoding='utf-8') as file:
     context = file.read()
+
+# Clean and preprocess the context
+cleaned_context = clean_text(context)
 
 # Function to split the context into chunks
 def chunk_context(context, max_length):
@@ -20,9 +41,9 @@ def chunk_context(context, max_length):
         chunks.append(tokenizer.convert_tokens_to_string(chunk))
     return chunks
 
-# Chunk the context to fit within model's maximum input length
+# Chunk the cleaned context to fit within model's maximum input length
 max_length = 512 - 50  # Allow some space for the question
-context_chunks = chunk_context(context, max_length)
+context_chunks = chunk_context(cleaned_context, max_length)
 
 print("Type your question or type 'quit' to exit.")
 
